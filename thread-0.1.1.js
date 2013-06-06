@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.1.2
+ * @version     0.1.3
  * @date        2013-06-06
  */
 (function () {
@@ -56,8 +56,6 @@
             // remove blob objects
             window.URL.revokeObjectURL( url );
             status = null;
-            delete worker;
-            throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
         }, false );
         
         this.getStatus = function () {
@@ -69,7 +67,6 @@
                 worker.terminate();
                 window.URL.revokeObjectURL( url );
                 status = false;
-                delete worker;
                 return true;
             } else {
                 return null;
