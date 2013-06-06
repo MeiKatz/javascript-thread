@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.1.1
+ * @version     0.1.2
  * @date        2013-06-06
  */
 (function () {
@@ -109,6 +109,18 @@
         Object.defineProperty( this, "status", {
             "get": function () {
                 return this.getStatus();
+            }
+        });
+        
+        Object.defineProperty( this, "running", {
+            "get": function () {
+                return (this.getStatus() === true);
+            }
+        });
+        
+        Object.defineProperty( this, "terminated", {
+            "get": function () {
+                return (this.getStatus() !== true);
             }
         });
     };
