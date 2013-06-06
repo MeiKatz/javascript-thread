@@ -19,7 +19,7 @@ thr.addEventListener( "message", function ( event ) {
 }, false );
 
 // listen to errors from the thread
-thr.addEventListener( "message", function ( event ) {
+thr.addEventListener( "error", function ( event ) {
   console.log( "error: " + event.message + " in " + event.filename + " on line " + event.lineno );
 }, false );
 
