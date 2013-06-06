@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.1
+ * @version     0.1.1
  * @date        2013-06-06
  */
 (function () {
@@ -9,7 +9,7 @@
     //
     Thread = function ( callback ) {
         // callback is either a function or a script element
-        if ( typeof callback === "function" || (callback instanceof HTMLElement && callback.nodeType === "SCRIPT") ) {
+        if ( typeof callback === "function" || callback instanceof HTMLScriptElement ) {
             // callback function
             if ( typeof callback === "function" ) {
                 var code = callback.toString().match( /^function\s*\([^\)]*\)\s*\{\s*((\S|\s)*\S)\s*\}$/ )[1];
