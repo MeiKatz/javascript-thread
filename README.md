@@ -3,7 +3,7 @@ Thread for JavaScript
 
 ```javascript
 // create a new thread
-thr = new Thread(function () {
+var thr = new Thread(function () {
   this.addEventListener( "message", function ( event ) {
     // convert value into a number
     var value = event.data * 1;
@@ -23,6 +23,10 @@ thr.addEventListener( "message", function ( event ) {
   console.log( "error: " + event.message + " in " + event.filename + " on line " + event.lineno );
 }, false );
 
+// send a message to the thread
+// (will log the value 25 on the console)
+thr.postMessage( 5 );
+
 // kill a thread
 thr.kill();
 // or
@@ -33,5 +37,23 @@ Thread.kill( thr );
 // -- thread terminated: false
 // -- thread terminated after an error: null
 thr.state;
+```
+other ways to create a thread
+=====
+```html
+<script id="thread" type="application/x-thread">
+  this.addEventListener( "message", function ( event ) {
+    var value = event.data * 1;
+    this.postMessage( value * value );
+  }, false );
+</script>
 
+<!-- ... -->
+
+<script type="application/javascript">
+  var thr = new Thread( document.getElementById('thread') );
+</script>
+```
+```javascript
+var thr = new Thread( "path/to/my/thread/file.js" );
 ```
