@@ -10,7 +10,7 @@
  * this stuff is worth it, you can buy me a beer in return Gregor Mitzka
  * ----------------------------------------------------------------------------
  */
-(function () {
+(function() {
     //
     // @param   (mixed) callback: function, string or instance of HTMLElement
     //
@@ -118,13 +118,13 @@
 
         Object.defineProperty( this, "running", {
             "get": function() {
-                return (this.getStatus() === true);
+                return ( this.getStatus() === true );
             }
         });
 
         Object.defineProperty( this, "terminated", {
             "get": function() {
-                return (this.getStatus() !== true);
+                return ( this.getStatus() !== true );
             }
         });
     };
