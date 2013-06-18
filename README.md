@@ -90,9 +90,7 @@ grp.has( thr ); // returns false
 // but what is it good for?
 // well, you can kill many threads at once
 var a, b, c; // threads
-grp.add( a );
-grp.add( b );
-grp.add( c );
+grp.add([ a, b, c ]);
 grp.kill();
 // now all threads are killed
 
