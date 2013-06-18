@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.1.5
+ * @version     0.1.6
  * @date        2013-08-06
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -16,7 +16,7 @@
     //
     Thread = function ( callback ) {
         // check if all necessary objects and functions are defined
-        if ( !window.URL || !window.URL.createObjectURL || !window.URL.revokeObjectURL || !window.Blob || !window.Worker ) {
+        if ( !Thread.isSupported ) {
             throw new ThreadError( "could not create thread, not all necessary dependencies are defined" );
         }
         
@@ -144,6 +144,14 @@
             return false;
         }
     };
+    
+    Thread.isSupported = (
+        window.URL                  &&
+        window.URL.createObjectURL  &&
+        window.URL.revokeObjectURL  &&
+        window.Blob                 &&
+        window.Worker
+    );
 
     //
     // @param   (string) message: error message
