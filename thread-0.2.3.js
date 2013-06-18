@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.2
+ * @version     0.2.3
  * @date        2013-06-18
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
