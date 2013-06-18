@@ -42,7 +42,7 @@
         // @param   (array/thread)  thread: a thread or an array of threads
         //
         this.add = function ( thread ) {
-            if ( typeof thread === "array" && thread.length > 0 ) {
+            if ( thread instanceof Array && thread.length > 0 ) {
                 var i;
                 for ( i in thread ) {
                     this.add( thread[ i ] );
@@ -63,7 +63,7 @@
         // @param   (array/thread)  thread: a thread or an array of threads
         //
         this.remove = function ( thread ) {
-            if ( typeof thread === "array" && thread.length > 0 ) {
+            if ( thread instanceof Array && thread.length > 0 ) {
                 var i;
                 for ( i in thread ) {
                     this.remove( thread[ i ] );
@@ -83,7 +83,7 @@
         // @param   (array/thread)  thread: a thread or an array of threads
         //
         this.has = function ( thread ) {
-            if ( typeof thread === "array" && thread.length > 0 ) {
+            if ( thread instanceof Array && thread.length > 0 ) {
                 var i;
                 for ( i in thread ) {
                     if ( !this.has( thread[ i ] ) ) {
