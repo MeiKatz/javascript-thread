@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.3
+ * @version     0.2.4
  * @date        2013-06-18
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -225,10 +225,11 @@
             }
 
             if ( typeof success === "function" ) {
-                worker.addEventListener( "message", function ( e ) {
+                var callback = function ( e ) {
                     success.call( thread, e.data );
-                    worker.removeEventListener( this );
-                }, false);
+                    worker.removeEventListener( "message", callback, false );
+                };
+                worker.addEventListener( "message", callback, false);
             }
 
             worker.postMessage( data );
