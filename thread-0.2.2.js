@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.1
+ * @version     0.2
  * @date        2013-06-18
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -30,35 +30,78 @@
     function ThreadGroup() {
         var group_id = ( "group#" + (new Date).valueOf() );
 
+        //
+        // returns the id of this group
+        //
         this.id = function() {
             return group_id;
         };
 
+        //
+        // adds all passed threads to this group
+        // @param   (array/thread)  thread: a thread or an array of threads
+        //
         this.add = function ( thread ) {
-            if ( !( thread instanceof Thread ) ) {
+            if ( typeof thread === "array" && thread.length > 0 ) {
+                var i;
+                for ( i in thread ) {
+                    this.add( thread[ i ] );
+                }
+                
+                return true;
+            } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not add thread, passed argument is not a thread" );
             }
 
             threads[ thread.id ] || ( threads[ thread.id ] = thread );
             groups[ thread.id ] = group_id;
+            return true;
         };
 
+        //
+        // removes all passed threads from this group
+        // @param   (array/thread)  thread: a thread or an array of threads
+        //
         this.remove = function ( thread ) {
-            if ( !( thread instanceof Thread ) ) {
+            if ( typeof thread === "array" && thread.length > 0 ) {
+                var i;
+                for ( i in thread ) {
+                    this.remove( thread[ i ] );
+                }
+                
+                return true;
+            } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not remove thread, passed argument is not a thread" );
             }
 
             groups[ thread.id ] = ThreadGroup.Default.id;
+            return true;
         };
-
+        
+        //
+        // returns true if this group contains all passed threads
+        // @param   (array/thread)  thread: a thread or an array of threads
+        //
         this.has = function ( thread ) {
-            if ( !( thread instanceof Thread ) ) {
+            if ( typeof thread === "array" && thread.length > 0 ) {
+                var i;
+                for ( i in thread ) {
+                    if ( !this.has( thread[ i ] ) ) {
+                        return false;
+                    }   
+                }
+                
+                return true;
+            } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not check thread, passed argument is not a thread" );
             }
 
             return ( groups[ thread.id ] === group_id );
         };
-        
+
+        //
+        // returns the number of threads in this group
+        //
         this.length = function() {
             var id,
                 length = 0;
@@ -69,6 +112,9 @@
             return length;
         };
 
+        //
+        // kills all threads in this group (-> Thread.kill)
+        //
         this.kill = function() {
             var id;
 
@@ -77,6 +123,9 @@
             }
         };
 
+        //
+        // sends data to all threads in this group (-> Thread.send)
+        //
         this.send = function ( data, success ) {
             var id;
 
@@ -86,16 +135,18 @@
         };
 
         Object.defineProperties( this, {
+            // returns the id of this thread group
             "id": {
                 "get": this.id
             },
-            
+            // returns the number of threads in this group
             "length": {
                 "get": this.length
             }
         });
     }
 
+    // create the default thread group
     ThreadGroup.Default = new ThreadGroup;
 
     //
@@ -163,6 +214,11 @@
             throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
         }, false);
 
+        //
+        // sends data to the thread
+        // @param   (mixed)     data: data for the thread
+        // @param   (function)  success: function that gets the result of the thread as the first parameter
+        //
         this.send = function ( data, success ) {
             if ( status !== Thread.RUNNING ) {
                 return false;
@@ -178,14 +234,23 @@
             worker.postMessage( data );
         };
 
+        //
+        // returns the status of the thread: running, terminated, or terminated with error (-> constants)
+        //
         this.status = function() {
             return status;
         };
 
+        //
+        // returns the id of the thread
+        //
         this.id = function() {
             return thread_id;
         };
 
+        //
+        // kill the thread
+        //
         this.kill = function() {
             if ( status !== Thread.RUNNING ) {
                 return null;
@@ -198,26 +263,27 @@
         };
 
         Object.defineProperties( this, {
+            // returns the current status of the thread: running, terminated, or terminated with error (-> constants)
             "status": {
                 "get": this.status
             },
-
+            // returns true if status is .RUNNING
             "running": {
                 "get": function() {
                     return ( this.status === Thread.RUNNING );
                 }
             },
-
+            // returns true if status is .TERMINATED or .ERROR
             "terminated": {
                 "get": function() {
                     return ( this.status !== Thread.RUNNING );
                 }
             },
-
+            // id of this thread
             "id": {
                 "get": this.id
             },
-            
+            // group id of the thread group that contains this thread
             "group_id": {
                 "get": function() {
                     return groups[ this.id ];
