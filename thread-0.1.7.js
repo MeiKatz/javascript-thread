@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.1.6
+ * @version     0.1.7
  * @date        2013-08-06
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -145,7 +145,7 @@
         }
     };
     
-    Thread.isSupported = (
+    Thread.isSupported = !!(
         window.URL                  &&
         window.URL.createObjectURL  &&
         window.URL.revokeObjectURL  &&
