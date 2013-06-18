@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.4
+ * @version     0.2.5
  * @date        2013-06-18
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -53,7 +53,10 @@
                 throw new ThreadError( "could not add thread, passed argument is not a thread" );
             }
 
-            threads[ thread.id ] || ( threads[ thread.id ] = thread );
+            if ( threads[ thread.id ] ) {
+                threads[ thread.id ] = thread;
+            }
+            
             groups[ thread.id ] = group_id;
             return true;
         };
@@ -106,7 +109,9 @@
             var id,
                 length = 0;
             for ( id in groups ) {
-                ( groups[ id ] === group_id ) && ( ++length );
+                if ( groups[ id ] === group_id ) {
+                    ++length;
+                }
             }
             
             return length;
@@ -119,7 +124,9 @@
             var id;
 
             for ( id in groups ) {
-                ( groups[ id ] === group_id ) && threads[ id ].kill();
+                if ( groups[ id ] === group_id ) {
+                    threads[ id ].kill();
+                }
             }
         };
 
@@ -130,7 +137,9 @@
             var id;
 
             for ( id in groups ) {
-                ( groups[ id ] === group_id ) && threads[ id ].send( data, success );
+                if ( groups[ id ] === group_id ) {
+                    threads[ id ].send( data, success );
+                }
             }
         };
 
@@ -296,6 +305,8 @@
     Thread.RUNNING    = 1;
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
+    
+    Thread.version = "0.2.5";
 
     //
     // @param   (object) thread: instance of Thread
