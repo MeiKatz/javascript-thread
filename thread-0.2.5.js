@@ -147,6 +147,19 @@
             return "[object ThreadGroup]";
         };
 
+        this.valueOf = function() {
+            var id,
+                list = [];
+
+            for ( id in groups ) {
+                if ( groups[ id ] === group_id ) {
+                    list.push( threads[ id ] );
+                }
+            }
+
+            return list;
+        };
+
         Object.defineProperties( this, {
             // returns the id of this thread group
             "id": {
