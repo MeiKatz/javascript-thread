@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2
+ * @version     0.2.1
  * @date        2013-06-18
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -48,7 +48,7 @@
                 throw new ThreadError( "could not remove thread, passed argument is not a thread" );
             }
 
-            groups[ thread.id ] = ThreadGroup.default.id;
+            groups[ thread.id ] = ThreadGroup.Default.id;
         };
 
         this.has = function ( thread ) {
@@ -96,7 +96,7 @@
         });
     }
 
-    ThreadGroup.default = new ThreadGroup;
+    ThreadGroup.Default = new ThreadGroup;
 
     //
     // @param   (mixed) callback: function, string or instance of HTMLElement
@@ -155,8 +155,7 @@
 
         var worker = new Worker( url );
         var status = Thread.RUNNING;
-        console.log(ThreadGroup.default);
-        ThreadGroup.default.add( this );
+        ThreadGroup.Default.add( this );
 
         worker.addEventListener( "error", function ( e ) {
             thread.kill();
