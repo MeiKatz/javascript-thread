@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.1.4
+ * @version     0.1.5
  * @date        2013-08-06
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -15,6 +15,11 @@
     // @param   (mixed) callback: function, string or instance of HTMLElement
     //
     Thread = function ( callback ) {
+        // check if all necessary objects and functions are defined
+        if ( !window.URL || !window.URL.createObjectURL || !window.URL.revokeObjectURL || !window.Blob || !window.Worker ) {
+            throw new ThreadError( "could not create thread, not all necessary dependencies are defined" );
+        }
+        
         // callback is either a function or a script element
         if ( typeof callback === "function" || callback instanceof HTMLScriptElement ) {
             // callback function
