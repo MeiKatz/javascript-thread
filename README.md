@@ -10,6 +10,9 @@ if ( !Thread.isSupported ) {
   console.warn( "sorry, your browser does not support Thread" );
 }
 
+// get version of Thread
+Thread.version;
+
 // create a new thread
 var thr = new Thread(function ( data ) {
   // convert value into a number
