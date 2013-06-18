@@ -143,6 +143,10 @@
             }
         };
 
+        this.toString = function() {
+            return "[object ThreadGroup]";
+        };
+
         Object.defineProperties( this, {
             // returns the id of this thread group
             "id": {
@@ -270,6 +274,10 @@
             window.URL.revokeObjectURL( url );
             status = Thread.TERMINATED;
             return true;
+        };
+
+        this.toString = function() {
+            return "[object Thread]";
         };
 
         Object.defineProperties( this, {
