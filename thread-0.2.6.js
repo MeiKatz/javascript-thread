@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.5
- * @date        2013-06-18
+ * @version     0.2.6
+ * @date        2013-06-19
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -27,27 +27,32 @@
     var groups  = {},
         threads = {};
 
-    function ThreadGroup() {
-        var group_id = ( "group#" + (new Date).valueOf() );
+    //
+    // creates a group of threads
+    // @param   (array) thread: a thread or an array of threads (-> add)
+    //
+    function ThreadGroup ( thread ) {
+        this.__props__.group_id = ( "group#" + ( new Date ).valueOf() );
+        
+        if ( thread != null ) {
+            this.add( thread );
+        }
+    }
 
-        //
-        // returns the id of this group
-        //
-        this.id = function() {
-            return group_id;
-        };
+    ThreadGroup.prototype = {
+        "__props__": {},
 
         //
         // adds all passed threads to this group
         // @param   (array/thread)  thread: a thread or an array of threads
         //
-        this.add = function ( thread ) {
+        "add": function ( thread ) {
             if ( thread instanceof Array && thread.length > 0 ) {
                 var i;
                 for ( i in thread ) {
                     this.add( thread[ i ] );
                 }
-                
+    
                 return true;
             } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not add thread, passed argument is not a thread" );
@@ -56,22 +61,22 @@
             if ( threads[ thread.id ] ) {
                 threads[ thread.id ] = thread;
             }
-            
-            groups[ thread.id ] = group_id;
+
+            groups[ thread.id ] = this.__props__.group_id;
             return true;
-        };
+        },
 
         //
         // removes all passed threads from this group
         // @param   (array/thread)  thread: a thread or an array of threads
         //
-        this.remove = function ( thread ) {
+        "remove": function ( thread ) {
             if ( thread instanceof Array && thread.length > 0 ) {
                 var i;
                 for ( i in thread ) {
                     this.remove( thread[ i ] );
                 }
-                
+
                 return true;
             } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not remove thread, passed argument is not a thread" );
@@ -79,13 +84,13 @@
 
             groups[ thread.id ] = ThreadGroup.Default.id;
             return true;
-        };
+        },
         
         //
         // returns true if this group contains all passed threads
         // @param   (array/thread)  thread: a thread or an array of threads
         //
-        this.has = function ( thread ) {
+        "has": function ( thread ) {
             if ( thread instanceof Array && thread.length > 0 ) {
                 var i;
                 for ( i in thread ) {
@@ -93,84 +98,81 @@
                         return false;
                     }   
                 }
-                
+
                 return true;
             } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not check thread, passed argument is not a thread" );
             }
 
-            return ( groups[ thread.id ] === group_id );
-        };
-
-        //
-        // returns the number of threads in this group
-        //
-        this.length = function() {
-            var id,
-                length = 0;
-            for ( id in groups ) {
-                if ( groups[ id ] === group_id ) {
-                    ++length;
-                }
-            }
-            
-            return length;
-        };
+            return ( groups[ thread.id ] === this.__props__.group_id );
+        },
 
         //
         // kills all threads in this group (-> Thread.kill)
         //
-        this.kill = function() {
+        "kill": function() {
             var id;
 
             for ( id in groups ) {
-                if ( groups[ id ] === group_id ) {
+                if ( groups[ id ] === this.__props__.group_id ) {
                     threads[ id ].kill();
                 }
             }
-        };
+        },
 
         //
         // sends data to all threads in this group (-> Thread.send)
         //
-        this.send = function ( data, success ) {
+        "send": function ( data, success ) {
             var id;
 
             for ( id in groups ) {
-                if ( groups[ id ] === group_id ) {
+                if ( groups[ id ] === this.__props__.group_id ) {
                     threads[ id ].send( data, success );
                 }
             }
-        };
+        },
 
-        this.toString = function() {
+        "toString": function() {
             return "[object ThreadGroup]";
-        };
-
-        this.valueOf = function() {
+        },
+        
+        "valueOf": function() {
             var id,
                 list = [];
 
             for ( id in groups ) {
-                if ( groups[ id ] === group_id ) {
+                if ( groups[ id ] === this.__props__.group_id ) {
                     list.push( threads[ id ] );
                 }
             }
 
             return list;
-        };
+        }
+    };
 
-        Object.defineProperties( this, {
-            // returns the id of this thread group
-            "id": {
-                "get": this.id
-            },
-            // returns the number of threads in this group
-            "length": {
-                "get": this.length
+    Object.defineProperties( ThreadGroup.prototype, {
+        // returns the id of this thread group
+        "id": {
+            "get": function() {
+                return this.__props__.group_id;
             }
-        });
-    }
+        },
+        // returns the number of threads in this group
+        "length": {
+            "get": function() {
+                var id,
+                    length = 0;
+                for ( id in groups ) {
+                    if ( groups[ id ] === this.__props__.group_id ) {
+                        ++length;
+                    }
+                }
+
+                return length;
+            }
+        }
+    });
 
     // create the default thread group
     ThreadGroup.Default = new ThreadGroup;
@@ -178,15 +180,14 @@
     //
     // @param   (mixed) callback: function, string or instance of HTMLScriptElement
     //
-    function Thread ( callback ) {
-        var thread    = this,
-            thread_id = ( "thread#" + (new Date).valueOf() );
-
+    function Thread ( callback ) {        
         // check if all necessary objects and functions are defined
         if ( !Thread.isSupported ) {
             throw new ThreadError( "could not create thread, not all necessary dependencies are defined" );
         }
 
+        this.__props__.thread_id = ( "thread#" + ( new Date ).valueOf() );
+        
         // callback is either a function or a script element
         if ( typeof callback === "function" || callback instanceof HTMLScriptElement ) {
             // callback function
@@ -229,26 +230,35 @@
         } else {
             throw new ThreadError( "could not create thread, passed argument is neither a function nor a script element nor a file uri" );
         }
-
-        var worker = new Worker( url );
-        var status = Thread.RUNNING;
+        
+        this.__props__.worker = new Worker( url );
+        this.__props__.status = Thread.RUNNING;
         ThreadGroup.Default.add( this );
 
-        worker.addEventListener( "error", function ( e ) {
+        var thread = this;
+
+        this.__props__.worker.addEventListener( "error", function ( e ) {
             thread.kill();
-            status = Thread.ERROR;
+            thread.__props__.status = Thread.ERROR;
             throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
         }, false);
+    }
+
+    Thread.prototype = {
+        "__props__": {},
 
         //
         // sends data to the thread
         // @param   (mixed)     data: data for the thread
         // @param   (function)  success: function that gets the result of the thread as the first parameter
         //
-        this.send = function ( data, success ) {
-            if ( status !== Thread.RUNNING ) {
+        "send": function ( data, success ) {
+            if ( this.__props__.status !== Thread.RUNNING ) {
                 return false;
             }
+
+            var thread = this,
+                worker = this.__props__.worker;
 
             if ( typeof success === "function" ) {
                 var callback = function ( e ) {
@@ -259,81 +269,71 @@
             }
 
             worker.postMessage( data );
-        };
-
-        //
-        // returns the status of the thread: running, terminated, or terminated with error (-> constants)
-        //
-        this.status = function() {
-            return status;
-        };
-
-        //
-        // returns the id of the thread
-        //
-        this.id = function() {
-            return thread_id;
-        };
+        },
 
         //
         // kill the thread
         //
-        this.kill = function() {
-            if ( status !== Thread.RUNNING ) {
+        "kill": function() {
+            if ( this.__props__.status !== Thread.RUNNING ) {
                 return null;
             }
 
-            worker.terminate();
+            this.__props__.worker.terminate();
             window.URL.revokeObjectURL( url );
-            status = Thread.TERMINATED;
+            this.__props__.status = Thread.TERMINATED;
             return true;
-        };
+        },
 
-        this.toString = function() {
+        "toString": function() {
             return "[object Thread]";
-        };
+        }
+    };
 
-        Object.defineProperties( this, {
-            // returns the current status of the thread: running, terminated, or terminated with error (-> constants)
-            "status": {
-                "get": this.status
-            },
-            // returns true if status is .RUNNING
-            "running": {
-                "get": function() {
-                    return ( this.status === Thread.RUNNING );
-                }
-            },
-            // returns true if status is .TERMINATED or .ERROR
-            "terminated": {
-                "get": function() {
-                    return ( this.status !== Thread.RUNNING );
-                }
-            },
-            // id of this thread
-            "id": {
-                "get": this.id
-            },
-            // group id of the thread group that contains this thread
-            "group_id": {
-                "get": function() {
-                    return groups[ this.id ];
-                }
+    Object.defineProperties( Thread.prototype, {
+        // returns the current status of the thread: running, terminated, or terminated with error (-> constants)
+        "status": {
+            "get": function() {
+                return this.__props__.status;
             }
-        });
-    }
+        },
+        // returns true if status is .RUNNING
+        "running": {
+            "get": function() {
+                return ( this.__props__.status === Thread.RUNNING );
+            }
+        },
+        // returns true if status is .TERMINATED or .ERROR
+        "terminated": {
+            "get": function() {
+                return ( this.__props__.status !== Thread.RUNNING );
+            }
+        },
+        // id of this thread
+        "id": {
+            "get": function() {
+                return this.__props__.thread_id;
+            }
+        },
+        // group id of the thread group that contains this thread
+        "group_id": {
+            "get": function() {
+                return groups[ this.__props__.thread_id ];
+            }
+        }
+    });
 
     Thread.RUNNING    = 1;
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
     
-    Thread.version = "0.2.5";
+    Thread.version = "0.2.6";
 
     //
-    // @param   (object) thread: instance of Thread
+    // @param   (object) thread: instance of Thread or ThreadGroup
     //
     Thread.kill = function ( thread ) {
-        if ( thread instanceof Thread ) {
+        if ( thread instanceof Thread || thread instanceof ThreadGroup ) {
             return thread.kill();
         } else {
             return false;
