@@ -114,12 +114,17 @@ grp.send( 5, function ( data ) {
 <!-- ... -->
 
 <script type="application/javascript">
-  var thr = new Thread( document.getElementById('thread') );
+  var thr = new Thread( document.getElementById( "thread" ) );
 </script>
 ```
 
 ```javascript
 var thr = new Thread( "path/to/my/thread/file.js" );
+```
+
+###### using with require.js
+```javascript
+var Thread = require( "thread" ).Thread;
 ```
 
 Behavior before version 0.2
