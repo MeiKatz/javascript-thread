@@ -176,7 +176,7 @@
     ThreadGroup.Default = new ThreadGroup;
 
     //
-    // @param   (mixed) callback: function, string or instance of HTMLElement
+    // @param   (mixed) callback: function, string or instance of HTMLScriptElement
     //
     function Thread ( callback ) {
         var thread    = this,
