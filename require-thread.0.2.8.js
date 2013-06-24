@@ -341,7 +341,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
 
-    Thread.version = "0.2.7";
+    Thread.version = "0.2.8";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
