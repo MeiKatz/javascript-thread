@@ -9,6 +9,7 @@ var grp = new ThreadGroup([ a, b, c ]); // a, b, c are threads
 // iterate over all threads in this group
 grp.each(function ( id, thread ) {
   // this === thread
+  // this.id === id
   // do something ...
 });
 // filter all terminated threads in this group
@@ -16,6 +17,7 @@ var terminated = grp.filter();
 // or via a custom filter function
 var terminated = grp.filter(function ( id, thread ) {
   // this === thread
+  // this.id === id
   // all return values that are converted to "true" stay in this group,
   // everything will be kicked off
   // do something ...
