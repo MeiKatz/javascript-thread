@@ -12,9 +12,9 @@ grp.each(function ( id, thread ) {
   // do something ...
 });
 // filter all terminated threads in this group
-ver terminated = grp.filter();
+var terminated = grp.filter();
 // or via a custom filter function
-ver terminated = grp.filter(function ( id, thread ) {
+var terminated = grp.filter(function ( id, thread ) {
   // this === thread
   // all return values that are converted to "true" stay in this group,
   // everything will be kicked off
