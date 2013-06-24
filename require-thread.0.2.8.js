@@ -130,7 +130,7 @@ define(function ( require, exports, module ) {
 
         "each": function ( callback ) {
             if ( typeof callback !== "function" ) {
-                throw new ThreadError( "could not filter threads, passed argument is not a function" );
+                throw new ThreadError( "could not iterate over threads, passed argument is not a function" );
             }
 
             var id;
