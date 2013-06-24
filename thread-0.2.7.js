@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.7
+ * @version     0.2.8
  * @date        2013-06-24
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -110,13 +110,9 @@
         // kills all threads in this group (-> Thread.kill)
         //
         "kill": function() {
-            var id;
-
-            for ( id in groups ) {
-                if ( groups[ id ] === this.__props__.group_id ) {
-                    threads[ id ].kill();
-                }
-            }
+            this.each(function() {
+               this.kill(); 
+            });
         },
 
         //
@@ -147,25 +143,18 @@
         },
 
         "filter": function ( callback ) {
-            if ( callback == null ) {
-                callback = function() {
-                    return ( this.status === Thread.RUNNING );
-                };
-            }
+            callback = callback || function() {
+                return ( this.status === Thread.RUNNING );
+            };
+            
+            var filtered = [];
 
-            if ( typeof callback !== "function" ) {
-                throw new ThreadError( "could not filter threads, passed argument is not a function" );
-            }
-
-            var id,
-                filtered = [];
-
-            for ( id in groups ) {
-                if ( groups[ id ] === this.__props__.group_id && !callback.call( threads[ id ], id, threads[ id ] ) ) {
-                    this.remove( threads[ id ] );
-                    filtered.push( threads[ id ] );
+            this.each(function ( id ) {
+                if ( !callback.call( this, id, this ) ) {
+                    ThreadGroup.Default.add( this );
+                    filtered.push( this );
                 }
-            }
+            });
 
             return filtered;
         },
@@ -352,7 +341,7 @@
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
 
-    Thread.version = "0.2.7";
+    Thread.version = "0.2.8";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
