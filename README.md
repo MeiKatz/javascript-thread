@@ -3,8 +3,24 @@ Thread for JavaScript
 
 New since version 0.2.7
 -----------------
-You cannot use a file uri or a html script element object as an argument for the constructor of Thread. Now you only can use a callback function.
-
+You cannot use a file uri or a html script element object as an argument for the constructor of Thread anymore. Now you only can use a callback function.
+```javascript
+var grp = new ThreadGroup([ a, b, c ]); // a, b, c are threads
+// iterate over all threads in this group
+grp.each(function ( id, thread ) {
+  // this === thread
+  // do something ...
+});
+// filter all terminated threads in this group
+ver terminated = grp.filter();
+// or via a custom filter function
+ver terminated = grp.filter(function ( id, thread ) {
+  // this === thread
+  // all return values that are converted to "true" stay in this group,
+  // everything will be kicked off
+  // do something ...
+});
+```
 Behavior since version 0.2
 -----------------
 ###### Normal way to create a thread (since version 0.2.7 the only way)
