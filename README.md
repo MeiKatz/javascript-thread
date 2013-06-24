@@ -1,9 +1,13 @@
 Thread for JavaScript
 =================
 
+New since version 0.2.7
+-----------------
+You cannot use a file uri or a html script element object as an argument for the constructor of Thread. Now you only can use a callback function.
+
 Behavior since version 0.2
 -----------------
-###### Normal way to create a thread
+###### Normal way to create a thread (since version 0.2.7 the only way)
 ```javascript
 // is Thread supported?
 if ( !Thread.isSupported ) {
@@ -102,7 +106,7 @@ grp.send( 5, function ( data ) {
   this; // this is the instance of the current thread
 });
 ```
-###### other ways to create a thread
+###### other ways to create a thread (no more available since version 0.2.7)
 ```html
 <script id="thread" type="application/x-thread">
   function ( data ) {
