@@ -61,8 +61,12 @@ Thread.kill( thread );
 thr.send( data, success );
 
 // toString()
-// returns [object Thread]
+// returns "[object Thread]"
 thr.toString();
+
+// valueOf()
+// returns the callback function that were passed to the constructor of Thread
+thr.valueOf();
 ```
 ThreadGroup
 -----------------
