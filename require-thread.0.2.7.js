@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.6
- * @date        2013-06-19
+ * @version     0.2.7
+ * @date        2013-06-24
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -27,20 +27,23 @@ define(function ( require, exports, module ) {
     var groups  = {},
         threads = {};
 
+    //
+    // creates a group of threads
+    // @param   (array) thread: a thread or an array of threads (-> add)
+    //
     function ThreadGroup ( thread ) {
-        this.__props__.group_id = ( "group#" + ( new Date ).valueOf() );
+        this.__props__ = {};
+        this.__props__.group_id = ( "group#" + ( new Date() ).valueOf() );
         
         if ( thread != null ) {
             this.add( thread );
         }
     }
-    
-    ThreadGroup.prototype = {
-        "__props__": {},
 
+    ThreadGroup.prototype = {
         //
         // adds all passed threads to this group
-        // @param   (array/thread)  thread: a thread or an array of threads
+        // @param   (array|thread)  thread: a thread or an array of threads
         //
         "add": function ( thread ) {
             if ( thread instanceof Array && thread.length > 0 ) {
@@ -48,13 +51,13 @@ define(function ( require, exports, module ) {
                 for ( i in thread ) {
                     this.add( thread[ i ] );
                 }
-    
+
                 return true;
             } else if ( !( thread instanceof Thread ) ) {
                 throw new ThreadError( "could not add thread, passed argument is not a thread" );
             }
 
-            if ( threads[ thread.id ] ) {
+            if ( !threads[ thread.id ] ) {
                 threads[ thread.id ] = thread;
             }
 
@@ -64,7 +67,7 @@ define(function ( require, exports, module ) {
 
         //
         // removes all passed threads from this group
-        // @param   (array/thread)  thread: a thread or an array of threads
+        // @param   (array|thread)  thread: a thread or an array of threads
         //
         "remove": function ( thread ) {
             if ( thread instanceof Array && thread.length > 0 ) {
@@ -84,7 +87,7 @@ define(function ( require, exports, module ) {
         
         //
         // returns true if this group contains all passed threads
-        // @param   (array/thread)  thread: a thread or an array of threads
+        // @param   (array|thread)  thread: a thread or an array of threads
         //
         "has": function ( thread ) {
             if ( thread instanceof Array && thread.length > 0 ) {
@@ -129,6 +132,44 @@ define(function ( require, exports, module ) {
             }
         },
 
+        "each": function ( callback ) {
+            if ( typeof callback !== "function" ) {
+                throw new ThreadError( "could not filter threads, passed argument is not a function" );
+            }
+
+            var id;
+
+            for ( id in groups ) {
+                if ( groups[ id ] === this.__props__.group_id ) {
+                    callback.call( threads[ id ], id, threads[ id ] );
+                }
+            }
+        },
+
+        "filter": function ( callback ) {
+            if ( callback == null ) {
+                callback = function() {
+                    return ( this.status === Thread.RUNNING );
+                };
+            }
+
+            if ( typeof callback !== "function" ) {
+                throw new ThreadError( "could not filter threads, passed argument is not a function" );
+            }
+
+            var id,
+                filtered = [];
+
+            for ( id in groups ) {
+                if ( groups[ id ] === this.__props__.group_id && !callback.call( threads[ id ], id, threads[ id ] ) ) {
+                    this.remove( threads[ id ] );
+                    filtered.push( threads[ id ] );
+                }
+            }
+
+            return filtered;
+        },
+
         "toString": function() {
             return "[object ThreadGroup]";
         },
@@ -171,60 +212,46 @@ define(function ( require, exports, module ) {
     });
 
     // create the default thread group
-    ThreadGroup.Default = new ThreadGroup;
+    ThreadGroup.Default = new ThreadGroup();
+    ThreadGroup.Default.remove = function() {
+      throw new ThreadError( "you cannot remove anything from the default thread group" );
+    };
 
     //
-    // @param   (mixed) callback: function, string or instance of HTMLScriptElement
+    // @param   (mixed) callback: function
     //
-    function Thread ( callback ) {        
+    function Thread ( callback ) {
+        this.__props__ = {};
+
         // check if all necessary objects and functions are defined
         if ( !Thread.isSupported ) {
             throw new ThreadError( "could not create thread, not all necessary dependencies are defined" );
         }
 
-        this.__props__.thread_id = ( "thread#" + ( new Date ).valueOf() );
+        this.__props__.thread_id = ( "thread#" + ( new Date() ).valueOf() );
+        this.__props__.callback  = callback;
         
-        // callback is either a function or a script element
-        if ( typeof callback === "function" || callback instanceof HTMLScriptElement ) {
-            // callback function
-            if ( typeof callback === "function" ) {
-                var code = callback.toString();
-            // script element
-            } else {
-                var code = callback.textContent;
-            }
-
-            var source = code.match( /^function\s*\([^\)]*\)\s*\{\s*((\S|\s)*\S)\s*\}$/ );
+        // callback is a function
+        if ( typeof callback === "function" ) {
+            var code = callback.toString().match( /^function\s*\([^\)]*\)\s*\{\s*((\S|\s)*\S)\s*\}$/ );
 
             // code must not be empty
-            if ( source == null || source[ 1 ] === "" ) {
-                throw new ThreadError( "could not create thread, script does not contain any commands or has an invalid structure" );
+            if ( code == null ) {
+                throw new ThreadError( "could not create thread, script does not contain any commands" );
             }
 
-            source = [
-                "this.addEventListener( \"message\", function ( e ) {", "\n\t",
-                    "var ret = (" + source[ 0 ] + ").call( e.target, e.data );", "\n\t",
-                    "this.postMessage( ret );", "\n",
+            code = [
+                "this.addEventListener( \"message\", function ( e ) {",
+                    "var ret = (" + code[ 0 ] + ").call( e.target, e.data );",
+                    "this.postMessage( ret );",
                 "}, false);"
             ].join( "" );
 
             // create url for the blob object
-            var url  = window.URL.createObjectURL( new Blob( [ source ], { "type": "application/javascript" } ) );
-        // file name
-        } else if ( typeof callback === "string" ) {
-            // determine file name of string
-            callback = callback.match( /\S+/ );
-
-            // no file name could be determined
-            if ( !callback ) {
-                throw new ThreadError( "could not create thread, passed argument does not contain any file name" );
-            }
-
-            // set url
-            var url = callback[ 0 ];
+            var url  = window.URL.createObjectURL( new Blob( [ code ], { "type": "application/javascript" } ) );
         // incorrect value for passed argument
         } else {
-            throw new ThreadError( "could not create thread, passed argument is neither a function nor a script element nor a file uri" );
+            throw new ThreadError( "could not create thread, passed argument is not a function" );
         }
         
         this.__props__.worker = new Worker( url );
@@ -241,8 +268,6 @@ define(function ( require, exports, module ) {
     }
 
     Thread.prototype = {
-        "__props__": {},
-
         //
         // sends data to the thread
         // @param   (mixed)     data: data for the thread
@@ -283,6 +308,10 @@ define(function ( require, exports, module ) {
 
         "toString": function() {
             return "[object Thread]";
+        },
+
+        "valueOf": function() {
+            return this.__props__.callback;
         }
     };
 
@@ -322,8 +351,8 @@ define(function ( require, exports, module ) {
     Thread.RUNNING    = 1;
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
-    
-    Thread.version = "0.2.6";
+
+    Thread.version = "0.2.7";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
@@ -343,7 +372,7 @@ define(function ( require, exports, module ) {
         window.Blob                 &&
         window.Worker
     );
-    
+
     exports.Thread      = Thread;
     exports.ThreadError = ThreadError;
     exports.ThreadGroup = ThreadGroup;
