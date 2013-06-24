@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.8
+ * @version     0.2.9
  * @date        2013-06-24
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -119,13 +119,9 @@ define(function ( require, exports, module ) {
         // sends data to all threads in this group (-> Thread.send)
         //
         "send": function ( data, success ) {
-            var id;
-
-            for ( id in groups ) {
-                if ( groups[ id ] === this.__props__.group_id ) {
-                    threads[ id ].send( data, success );
-                }
-            }
+            this.each(function() {
+                this.send( data, success );
+            });
         },
 
         "each": function ( callback ) {
@@ -162,18 +158,15 @@ define(function ( require, exports, module ) {
         "toString": function() {
             return "[object ThreadGroup]";
         },
-        
+
         "valueOf": function() {
-            var id,
-                list = [];
+            var ret = [];
 
-            for ( id in groups ) {
-                if ( groups[ id ] === this.__props__.group_id ) {
-                    list.push( threads[ id ] );
-                }
-            }
+            this.each(function() {
+                ret.push( this );
+            });
 
-            return list;
+            return ret;
         }
     };
 
@@ -341,7 +334,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
 
-    Thread.version = "0.2.8";
+    Thread.version = "0.2.9";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
