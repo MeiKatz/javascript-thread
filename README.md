@@ -1,6 +1,45 @@
 Thread for JavaScript
 =================
 
+New since version 0.3.1
+-----------------
+After introducing the "send" method inside of a thread in the last version of Thread, I recognized that it would be great if you just could stop a thread instead of killing and recreating it. For those purposes is the new method "stop". There is also a new status "waiting" if a thread is not currently running, but is also not terminated.
+```javascript
+var thread = new Thread(function() {
+  var a = ( new Date ).valueOf();
+  
+  while ( true ) {
+    // send a message every 5 seconds
+    if ( a + 5000 <= ( new Date ).valueOf() ) {
+      a = ( new Date ).valueOf();
+      // new send method
+      this.send( "five seconds past" );
+    }
+  }
+});
+
+// check status
+thread.waiting; // returns true
+thread.running; // returns false
+
+// start thread
+thread.send( null, function ( data ) {
+  console.log( data );
+});
+
+// check status again
+thread.waiting; // returns false
+thread.running; // returns true
+
+// ... somewhere else
+thread.stop()
+
+// status
+thread.waiting; // returns true
+thread.running; // returns false
+```
+You can use this behaviour also on many threads at once with ThreadGroup.stop().
+
 New since version 0.3
 -----------------
 You can now add required scripts to the thread source. But remember: while you cannot access the window, you cannot access any html element or special apis of it.
@@ -28,6 +67,10 @@ var thread = new Thread(function() {
       this.send( "five seconds past" );
     }
   }
+});
+
+thread.send( null, function ( data ) {
+  console.log( data );
 });
 
 // ... somewhere else (after this the thread won't send anymore)
