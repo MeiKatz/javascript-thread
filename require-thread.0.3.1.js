@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.1
+ * @version     0.3.2
  * @date        2013-06-25
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -320,15 +320,17 @@ define(function ( require, exports, module ) {
         },
 
         "stop": function() {
-            var thread = this;
-            this.__props__.status = Thread.WAITING;
-            this.__props__.worker.terminate();
-            this.__props__.worker = new Worker( this.__props__.url );
-            this.__props__.worker.addEventListener( "error", function ( e ) {
-                thread.kill();
-                thread.__props__.status = Thread.ERROR;
-                throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
-            }, false);
+            if ( this.__props__.status === Thread.RUNNING ) {
+                var thread = this;
+                this.__props__.status = Thread.WAITING;
+                this.__props__.worker.terminate();
+                this.__props__.worker = new Worker( this.__props__.url );
+                this.__props__.worker.addEventListener( "error", function ( e ) {
+                    thread.kill();
+                    thread.__props__.status = Thread.ERROR;
+                    throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
+                }, false);
+            }
         },
 
         //
@@ -398,7 +400,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.1";
+    Thread.version = "0.3.2";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
