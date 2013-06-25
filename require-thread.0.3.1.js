@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3
+ * @version     0.3.1
  * @date        2013-06-25
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -128,6 +128,15 @@ define(function ( require, exports, module ) {
                this.kill(); 
             });
         },
+        
+        //
+        // stops all threads in this group (-> Thread.stop)
+        //
+        "stop": function() {
+            this.each(function() {
+                this.stop();
+            });
+        },
 
         //
         // sends data to all threads in this group (-> Thread.send)
@@ -140,7 +149,7 @@ define(function ( require, exports, module ) {
 
         "filter": function ( callback ) {
             callback = callback || function() {
-                return ( this.status === Thread.RUNNING );
+                return ( this.status === Thread.RUNNING || this.status === Thread.WAITING );
             };
             
             var filtered = [];
@@ -267,7 +276,7 @@ define(function ( require, exports, module ) {
         
         this.__props__.worker = new Worker( url );
         this.__props__.url    = url;
-        this.__props__.status = Thread.RUNNING;
+        this.__props__.status = Thread.WAITING;
         ThreadGroup.Default.add( this );
 
         var thread = this;
@@ -286,9 +295,11 @@ define(function ( require, exports, module ) {
         // @param   (function)  success: function that gets the result of the thread as the first parameter
         //
         "send": function ( data, success ) {
-            if ( this.__props__.status !== Thread.RUNNING ) {
+            if ( this.__props__.status !== Thread.RUNNING && this.__props__.status !== Thread.WAITING ) {
                 return false;
             }
+            
+            this.__props__.status = Thread.RUNNING;
 
             var thread = this,
                 worker = this.__props__.worker;
@@ -298,6 +309,7 @@ define(function ( require, exports, module ) {
                     success.call( thread, e.data[ 1 ] );
 
                     if ( e.data[ 0 ] ) {
+                        thread.__props__.status = Thread.WAITING;
                         worker.removeEventListener( "message", callback, false );
                     }
                 };
@@ -307,11 +319,23 @@ define(function ( require, exports, module ) {
             worker.postMessage( data );
         },
 
+        "stop": function() {
+            var thread = this;
+            this.__props__.status = Thread.WAITING;
+            this.__props__.worker.terminate();
+            this.__props__.worker = new Worker( this.__props__.url );
+            this.__props__.worker.addEventListener( "error", function ( e ) {
+                thread.kill();
+                thread.__props__.status = Thread.ERROR;
+                throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
+            }, false);
+        },
+
         //
         // kill the thread
         //
         "kill": function() {
-            if ( this.__props__.status !== Thread.RUNNING ) {
+            if ( this.__props__.status !== Thread.RUNNING && this.__props__.status !== Thread.WAITING ) {
                 return null;
             }
 
@@ -343,10 +367,16 @@ define(function ( require, exports, module ) {
                 return ( this.__props__.status === Thread.RUNNING );
             }
         },
+        // returns true if status is .WAITING
+        "waiting": {
+            "get": function() {
+                return ( this.__props__.status === Thread.WAITING );
+            }
+        },
         // returns true if status is .TERMINATED or .ERROR
         "terminated": {
             "get": function() {
-                return ( this.__props__.status !== Thread.RUNNING );
+                return ( this.__props__.status === Thread.TERMINATED || this.__props__.status === Thread.ERROR );
             }
         },
         // id of this thread
@@ -364,10 +394,11 @@ define(function ( require, exports, module ) {
     });
 
     Thread.RUNNING    = 1;
-    Thread.TERMINATED = 2;
-    Thread.ERROR      = 3;
+    Thread.WAITING    = 2;
+    Thread.TERMINATED = 3;
+    Thread.ERROR      = 4;
 
-    Thread.version = "0.3";
+    Thread.version = "0.3.1";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
