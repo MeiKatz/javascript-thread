@@ -1,6 +1,39 @@
 Thread for JavaScript
 =================
 
+New since version 0.3
+-----------------
+You can now add required scripts to the thread source. But remember: while you cannot access the window, you cannot access any html element or special apis of it.
+Also you can now send data permanently from inside a thread. Sometimes this is usefull if you don't want to start a thread after you received data from it.
+```javascript
+// without any imported scripts
+var thread = new Thread(function ( data ) {
+  return data;
+});
+
+// with imported scripts
+var thread = new Thread([ "foo.js", "bar.js" ], function ( data ) {
+  return foo( data ) + bar( data );
+});
+
+// use the new send method from inside a thread
+var thread = new Thread(function() {
+  var a = ( new Date ).valueOf();
+  
+  while ( true ) {
+    // send a message every 5 seconds
+    if ( a + 5000 <= ( new Date ).valueOf() ) {
+      a = ( new Date ).valueOf();
+      // new send method
+      this.send( "five seconds pasted" );
+    }
+  }
+});
+
+// ... somewhere else (after this the thread won't send anymore)
+thread.kill();
+```
+
 New since version 0.2.7
 -----------------
 You cannot use a file uri or a html script element object as an argument for the constructor of Thread anymore. Now you only can use a callback function.
