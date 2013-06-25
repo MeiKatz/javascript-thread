@@ -31,7 +31,7 @@ thread.send( null, function ( data ) {
 thread.waiting; // returns false
 thread.running; // returns true
 
-// ... somewhere else
+// ... somewhere else (after this the thread won't send anymore, but you can restart it with ->send)
 thread.stop()
 
 // status
