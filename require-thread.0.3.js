@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.2.9
- * @date        2013-06-24
+ * @version     0.3
+ * @date        2013-06-25
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -41,6 +41,20 @@ define(function ( require, exports, module ) {
     }
 
     ThreadGroup.prototype = {
+        "each": function ( callback ) {
+            if ( typeof callback !== "function" ) {
+                throw new ThreadError( "could not filter threads, passed argument is not a function" );
+            }
+
+            var id;
+
+            for ( id in groups ) {
+                if ( groups[ id ] === this.__props__.group_id ) {
+                    callback.call( threads[ id ], id, threads[ id ] );
+                }
+            }
+        },
+
         //
         // adds all passed threads to this group
         // @param   (array|thread)  thread: a thread or an array of threads
@@ -124,20 +138,6 @@ define(function ( require, exports, module ) {
             });
         },
 
-        "each": function ( callback ) {
-            if ( typeof callback !== "function" ) {
-                throw new ThreadError( "could not iterate over threads, passed argument is not a function" );
-            }
-
-            var id;
-
-            for ( id in groups ) {
-                if ( groups[ id ] === this.__props__.group_id ) {
-                    callback.call( threads[ id ], id, threads[ id ] );
-                }
-            }
-        },
-
         "filter": function ( callback ) {
             callback = callback || function() {
                 return ( this.status === Thread.RUNNING );
@@ -158,7 +158,7 @@ define(function ( require, exports, module ) {
         "toString": function() {
             return "[object ThreadGroup]";
         },
-
+        
         "valueOf": function() {
             var ret = [];
 
@@ -190,6 +190,19 @@ define(function ( require, exports, module ) {
 
                 return length;
             }
+        },
+        
+        "threads": {
+            "get": function() {
+                var id,
+                    list = {};
+
+                for ( id in groups ) {
+                    if ( groups[ id ] === this.__props__.group_id ) {
+                        list[ id ] = threads[ id ];
+                    }
+                }
+            }
         }
     });
 
@@ -200,9 +213,11 @@ define(function ( require, exports, module ) {
     };
 
     //
-    // @param   (mixed) callback: function
+    // @param   (array|function)    require: an array of required scripts for the thread,
+    //                                  or in case callback is not defined a callback function
+    // @param   (function)          callback: callback function
     //
-    function Thread ( callback ) {
+    function Thread ( require, callback ) {
         this.__props__ = {};
 
         // check if all necessary objects and functions are defined
@@ -210,33 +225,48 @@ define(function ( require, exports, module ) {
             throw new ThreadError( "could not create thread, not all necessary dependencies are defined" );
         }
 
+        callback = ( typeof require === "function" ) ? require : callback;
+        require  = ( require instanceof Array )      ? require : [];
+
         this.__props__.thread_id = ( "thread#" + ( new Date() ).valueOf() );
         this.__props__.callback  = callback;
-        
-        // callback is a function
-        if ( typeof callback === "function" ) {
-            var code = callback.toString().match( /^function\s*\([^\)]*\)\s*\{\s*((\S|\s)*\S)\s*\}$/ );
 
-            // code must not be empty
-            if ( code == null ) {
-                throw new ThreadError( "could not create thread, script does not contain any commands" );
-            }
-
-            code = [
-                "this.addEventListener( \"message\", function ( e ) {",
-                    "var ret = (" + code[ 0 ] + ").call( e.target, e.data );",
-                    "this.postMessage( ret );",
-                "}, false);"
-            ].join( "" );
-
-            // create url for the blob object
-            var url  = window.URL.createObjectURL( new Blob( [ code ], { "type": "application/javascript" } ) );
-        // incorrect value for passed argument
-        } else {
-            throw new ThreadError( "could not create thread, passed argument is not a function" );
+        // incorrect value for passed arguments
+        if ( typeof callback !== "function" ) {
+            throw new ThreadError( "could not create thread, passed argument is not a function" );            
         }
+
+        var code = callback.toString().match( /^function\s*\([^\)]*\)\s*\{\s*((\S|\s)*\S)\s*\}$/ );
+
+        // code must not be empty
+        if ( code == null ) {
+            throw new ThreadError( "could not create thread, script does not contain any commands" );
+        }
+
+        // build the thread source code
+        code = [
+            "this.addEventListener(\"message\",function(e){",
+                "var t=e.target,self=this;",
+                "delete t.onmessage; delete t.onerror; delete t.self;",
+                "t.send=function(d){",
+                    "self.postMessage([!1,d])",
+                "};",
+                "t.threadId=\"", this.__props__.thread_id, "\";",
+                "var r=(" + code[ 0 ] + ").call(t,e.data);",
+                "this.postMessage([!0,r]);",
+            "},false);"
+        ].join( "" );
+
+        // add required scripts at the top of the thread script
+        if ( require.length > 0 ) {
+            code = "importScripts(\"" + require.join( "\",\"" ) + "\");" + code;
+        }
+
+        // create url for the blob object
+        var url  = window.URL.createObjectURL( new Blob( [ code ], { "type": "application/javascript" } ) );
         
         this.__props__.worker = new Worker( url );
+        this.__props__.url    = url;
         this.__props__.status = Thread.RUNNING;
         ThreadGroup.Default.add( this );
 
@@ -265,8 +295,11 @@ define(function ( require, exports, module ) {
 
             if ( typeof success === "function" ) {
                 var callback = function ( e ) {
-                    success.call( thread, e.data );
-                    worker.removeEventListener( "message", callback, false );
+                    success.call( thread, e.data[ 1 ] );
+
+                    if ( e.data[ 0 ] ) {
+                        worker.removeEventListener( "message", callback, false );
+                    }
                 };
                 worker.addEventListener( "message", callback, false);
             }
@@ -283,7 +316,7 @@ define(function ( require, exports, module ) {
             }
 
             this.__props__.worker.terminate();
-            window.URL.revokeObjectURL( url );
+            window.URL.revokeObjectURL( this.__props__.url );
             this.__props__.status = Thread.TERMINATED;
             return true;
         },
@@ -334,7 +367,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 2;
     Thread.ERROR      = 3;
 
-    Thread.version = "0.2.9";
+    Thread.version = "0.3";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
