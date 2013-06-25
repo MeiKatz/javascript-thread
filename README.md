@@ -25,7 +25,7 @@ var thread = new Thread(function() {
     if ( a + 5000 <= ( new Date ).valueOf() ) {
       a = ( new Date ).valueOf();
       // new send method
-      this.send( "five seconds pasted" );
+      this.send( "five seconds past" );
     }
   }
 });
