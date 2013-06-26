@@ -1,7 +1,7 @@
 Thread for JavaScript
 =================
 
-New in version 0.3.5
+New in version 0.3.5 (not published for now)
 -----------------
 This update is inspired by <http://github.com/ComFreek>. You now have the possibility to differ messages send by "send" from messages send at the end of a thread. But you can also use the behaviour from before.
 ```javascript
