@@ -22,7 +22,6 @@ thread.send( data, function ( data, state ) {
 }, function ( data, state ) {
   console.log( "finished: " + data );
 });
-
 ```
 
 New since version 0.3.1
