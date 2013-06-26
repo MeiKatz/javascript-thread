@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.4
- * @date        2013-06-26
+ * @version     0.3.5
+ * @date        2013-06-27
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -141,9 +141,9 @@
         //
         // sends data to all threads in this group (-> Thread.send)
         //
-        "send": function ( data, success ) {
+        "send": function ( data, progress, finished ) {
             this.each(function() {
-                this.send( data, success );
+                this.send( data, progress, finished );
             });
         },
 
@@ -290,11 +290,14 @@
 
     Thread.prototype = {
         //
+        // thanks to <http://github.com/ComFreek> for the inspiration of the changes made in version 0.3.5
         // sends data to the thread
         // @param   (mixed)     data: data for the thread
-        // @param   (function)  success: function that gets the result of the thread as the first parameter
+        // @param   (function)  progress: function that gets called in progress, takes the data as the first, and the status as the second parameter;
+        //                          if <finished> is not defined <progress> gets also called on finish
+        // @param   (function)  finished: function that gets called on finish, takes the data as the first, and the status as the second parameter
         //
-        "send": function ( data, success ) {
+        "send": function ( data, progress, finished ) {
             if ( this.__props__.status !== Thread.RUNNING && this.__props__.status !== Thread.WAITING ) {
                 return false;
             }
@@ -304,13 +307,16 @@
             var thread = this,
                 worker = this.__props__.worker;
 
-            if ( typeof success === "function" ) {
+            if ( typeof progress === "function" ) {
+                finished = ( finished == null ) ? progress : finished;
+                
                 var callback = function ( e ) {
-                    success.call( thread, e.data[ 1 ] );
-
                     if ( e.data[ 0 ] ) {
                         thread.__props__.status = Thread.WAITING;
+                        finished.call( thread, e.data[ 1 ], Thread.WAITING );
                         worker.removeEventListener( "message", callback, false );
+                    } else {
+                        progress.call( thread, e.data[ 1 ], Thread.RUNNING );
                     }
                 };
                 worker.addEventListener( "message", callback, false);
@@ -400,7 +406,7 @@
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.4";
+    Thread.version = "0.3.5";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
