@@ -1,7 +1,7 @@
 Thread for JavaScript
 =================
 
-New in version 0.3.5 (not published for now)
+New in version 0.3.5
 -----------------
 This update is inspired by <http://github.com/ComFreek>. You now have the possibility to differ messages send by "send" from messages send at the end of a thread. But you can also use the behaviour from before.
 ```javascript
@@ -24,7 +24,7 @@ thread.send( data, function ( data, state ) {
 });
 ```
 
-New since version 0.3.1
+New in version 0.3.1
 -----------------
 After introducing the "send" method inside of a thread in the last version of Thread, I recognized that it would be great if you just could stop a thread instead of killing and recreating it. For those purposes is the new method "stop". There is also a new status "waiting" if a thread is not currently running, but is also not terminated.
 ```javascript
@@ -63,7 +63,7 @@ thread.running; // returns false
 ```
 You can use this behaviour also on many threads at once with ThreadGroup.stop().
 
-New since version 0.3
+New in version 0.3
 -----------------
 You can now add required scripts to the thread source. But remember: while you cannot access the window, you cannot access any html element or special apis of it.
 Also you can now send data permanently from inside a thread. Sometimes this is usefull if you don't want to start a thread after you received data from it.
@@ -100,7 +100,7 @@ thread.send( null, function ( data ) {
 thread.kill();
 ```
 
-New since version 0.2.7
+New in version 0.2.7
 -----------------
 You cannot use a file uri or a html script element object as an argument for the constructor of Thread anymore. Now you only can use a callback function.
 ```javascript
