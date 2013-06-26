@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.3
+ * @version     0.3.4
  * @date        2013-06-26
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -261,7 +261,7 @@
                     "s.postMessage([!1,d])",
                 "};",
                 "t.threadId=\"", this.__props__.thread_id, "\";",
-                "var r=(" + code[ 0 ] + ").call(t,e.data);",
+                "var r=(" + code + ").call(t,e.data);",
                 "this.postMessage([!0,r]);",
             "},false);"
         ].join( "" );
@@ -400,7 +400,7 @@
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.3";
+    Thread.version = "0.3.4";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
