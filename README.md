@@ -1,6 +1,30 @@
 Thread for JavaScript
 =================
 
+New in version 0.3.5
+-----------------
+This update is inspired by <http://github.com/ComFreek>. You now have the possibility to differ messages send by "send" from messages send at the end of a thread. But you can also use the behaviour from before.
+```javascript
+// first version (callback fetchs messages from progress and finished)
+thread.send( data, function ( data, state ) {
+  // state === Thread.RUNNING
+  if ( state === Thread.RUNNING ) {
+    console.log( "running: " + data );
+  // state === Thread.WAITING
+  } else {
+    console.log( "finished: " + data );
+  }
+});
+
+// second version (differ messages in progress from messages on finish)
+thread.send( data, function ( data, state ) {
+  console.log( "running: " + data );
+}, function ( data, state ) {
+  console.log( "finished: " + data );
+});
+
+```
+
 New since version 0.3.1
 -----------------
 After introducing the "send" method inside of a thread in the last version of Thread, I recognized that it would be great if you just could stop a thread instead of killing and recreating it. For those purposes is the new method "stop". There is also a new status "waiting" if a thread is not currently running, but is also not terminated.
