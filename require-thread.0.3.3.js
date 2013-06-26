@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.2
- * @date        2013-06-25
+ * @version     0.3.3
+ * @date        2013-06-26
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -245,20 +245,20 @@ define(function ( require, exports, module ) {
             throw new ThreadError( "could not create thread, passed argument is not a function" );            
         }
 
-        var code = callback.toString().match( /^function\s*\([^\)]*\)\s*\{\s*((\S|\s)*\S)\s*\}$/ );
+        var code = callback.toString();
 
-        // code must not be empty
-        if ( code == null ) {
+        // code must not be empty (credits to ComFreek <https://github.com/ComFreek> for the idea for this fix)
+        if ( code.substring( code.indexOf( "{" ) + 1, code.lastIndexOf( "}" ) ).replace( /[\t\n\r ]/, "").length === 0 ) {
             throw new ThreadError( "could not create thread, script does not contain any commands" );
         }
 
         // build the thread source code
         code = [
             "this.addEventListener(\"message\",function(e){",
-                "var t=e.target,self=this;",
+                "var t=e.target,s=this;",
                 "delete t.onmessage; delete t.onerror; delete t.self;",
                 "t.send=function(d){",
-                    "self.postMessage([!1,d])",
+                    "s.postMessage([!1,d])",
                 "};",
                 "t.threadId=\"", this.__props__.thread_id, "\";",
                 "var r=(" + code[ 0 ] + ").call(t,e.data);",
@@ -400,7 +400,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.2";
+    Thread.version = "0.3.3";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
