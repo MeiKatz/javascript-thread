@@ -310,3 +310,12 @@ if ( !Thread.isSupported ) {
 ```javascript
 var thr = new Thread( "path/to/my/thread/file.js" );
 ```
+
+Author
+=================
+[+Gregor Mitzka](https://plus.google.com/u/0/104871897997634377152/about)
+
+Credits
+=================
+
+Thanks to [ComFreek](http://github.com/ComFreek) for the mutual inspiration of our both projects. Check out his version in TypeScript: [TypeScript-Threads](https://github.com/ComFreek/ThreadLibrary.js)
