@@ -1,6 +1,6 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.5
+ * @version     0.3.6
  * @date        2013-06-27
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
@@ -13,16 +13,64 @@
 define(function ( require, exports, module ) {
     "use strict";
 
+    // minimize code
+    function minimize ( code ) {
+        // segments are needed because otherwise it is impossible to differ code in parantheses from those outside of them
+        var segments = [],
+            key;
+        // collect all code segments. a new one starts after each keyword
+        code.replace( /("(\\\\|\\"|[^"])*")|('(\\\\|\\'|[^'])*')|(\/(\\\\|\\\/|[^\/])+\/[ig]*)|([^"'\/]*)/g, function() {
+            // code without parantheses
+            if ( arguments[ 7 ] != null ) {
+                // does five things:
+                // 1. replace tabs and spaces between a keyword and the following statement
+                // 2. remove spaces, tabs and line breaks (not listed below, I think you know why)
+                // 3. remove semi-colons before a }
+                // 4. convert true to !0 and false to !1
+                // 5. everything else
+                return arguments[ 7 ].replace( /((return|var|case|delete|in|typeof|void|function)[ \r\n\t]+)|([ \r\n\t]+)|(;[ \n\r\t]*\})|(true|false)|(.)/g, function() {
+                    // 1. case
+                    if ( arguments[ 2 ] ) {
+                        segments.push( arguments[ 2 ] + " " );
+                    // 3. case
+                    } else if ( arguments[ 4 ]) {
+                        segments.push( ( segments.pop() || "" ) + "}" );
+                    // 4. case
+                    } else if ( arguments[ 5 ] ) {
+                        segments.push( ( segments.pop() || "" ) + ( arguments[ 5 ] === "true"  ? "!0" : "!1" ) );
+                    // 5. case
+                    } else if ( arguments[ 6 ] ) {
+                        segments.push( ( segments.pop() || "" ) + arguments[ 6 ] );
+                    }
+                });
+            // code with parantheses
+            } else {
+                segments.push( ( segments.pop() || "" ) + arguments[ 0 ] );
+            }
+        });
+        
+        // iterate over all segments and look for return/function/case/void at the beginning of a segment
+        for ( key in segments ) {
+            // sometimes a return/case/function/void statement is not followed by a alphanumeric char,
+            // so we can remove the left space between return/case/function/void and its following statement
+            segments[ key ] = segments[ key ].replace( /^(return|function|case|void) ([^a-zA-Z0-9_])/g, "$1$2" );
+        }
+        
+        // join all segments and return them. the result is minimized code
+        // (variables are not renamed and control structures are not rewritten)
+        return segments.join( "" );
+    }
+
     //
     // @param   (string) message: error message
     //
     function ThreadError ( message ) {
-        message = message || "unknown error";
-
-        this.toString = function() {
-            return "ThreadError: " + message;
-        };
+        this.message = message || "unknown error";
     }
+    
+    ThreadError.prototype.toString = function() {
+        return "ThreadError: " + this.message;
+    };
 
     var groups  = {},
         threads = {};
@@ -34,7 +82,7 @@ define(function ( require, exports, module ) {
     function ThreadGroup ( thread ) {
         this.__props__ = {};
         this.__props__.group_id = ( "group#" + ( new Date() ).valueOf() );
-        
+
         if ( thread != null ) {
             this.add( thread );
         }
@@ -98,7 +146,7 @@ define(function ( require, exports, module ) {
             groups[ thread.id ] = ThreadGroup.Default.id;
             return true;
         },
-        
+
         //
         // returns true if this group contains all passed threads
         // @param   (array|thread)  thread: a thread or an array of threads
@@ -127,8 +175,9 @@ define(function ( require, exports, module ) {
             this.each(function() {
                this.kill(); 
             });
+            return true;
         },
-        
+
         //
         // stops all threads in this group (-> Thread.stop)
         //
@@ -136,6 +185,7 @@ define(function ( require, exports, module ) {
             this.each(function() {
                 this.stop();
             });
+            return true;
         },
 
         //
@@ -151,7 +201,7 @@ define(function ( require, exports, module ) {
             callback = callback || function() {
                 return ( this.status === Thread.RUNNING || this.status === Thread.WAITING );
             };
-            
+
             var filtered = [];
 
             this.each(function ( id ) {
@@ -167,7 +217,7 @@ define(function ( require, exports, module ) {
         "toString": function() {
             return "[object ThreadGroup]";
         },
-        
+
         "valueOf": function() {
             var ret = [];
 
@@ -200,7 +250,7 @@ define(function ( require, exports, module ) {
                 return length;
             }
         },
-        
+
         "threads": {
             "get": function() {
                 var id,
@@ -248,22 +298,28 @@ define(function ( require, exports, module ) {
         var code = callback.toString();
 
         // code must not be empty (credits to ComFreek <https://github.com/ComFreek> for the idea for this fix)
-        if ( code.substring( code.indexOf( "{" ) + 1, code.lastIndexOf( "}" ) ).replace( /[\t\n\r ]/, "").length === 0 ) {
+        if ( !code.substring( code.indexOf( "{" ) + 1, code.lastIndexOf( "}" ) ).replace( /[\t\n\r ]/, "" ) ) {
             throw new ThreadError( "could not create thread, script does not contain any commands" );
         }
 
+        // minimize code
+        code = minimize( code );
+        
         // build the thread source code
         code = [
             "this.addEventListener(\"message\",function(e){",
                 "var t=e.target,s=this;",
-                "delete t.onmessage; delete t.onerror; delete t.self;",
+                "delete t.onmessage;delete t.onerror;delete t.self;",
                 "t.send=function(d){",
                     "s.postMessage([!1,d])",
                 "};",
+                "t.import=function(f){",
+                    "s.importScripts(f)",
+                "};",
                 "t.threadId=\"", this.__props__.thread_id, "\";",
                 "var r=(" + code + ").call(t,e.data);",
-                "this.postMessage([!0,r]);",
-            "},false);"
+                "this.postMessage([!0,r])",
+            "},!1);"
         ].join( "" );
 
         // add required scripts at the top of the thread script
@@ -273,7 +329,7 @@ define(function ( require, exports, module ) {
 
         // create url for the blob object
         var url  = window.URL.createObjectURL( new Blob( [ code ], { "type": "application/javascript" } ) );
-        
+
         this.__props__.worker = new Worker( url );
         this.__props__.url    = url;
         this.__props__.status = Thread.WAITING;
@@ -301,7 +357,13 @@ define(function ( require, exports, module ) {
             if ( this.__props__.status !== Thread.RUNNING && this.__props__.status !== Thread.WAITING ) {
                 return false;
             }
-            
+
+            if ( typeof data === "function" ) {
+                finished = progress;
+                progress = data;
+                data     = undefined;
+            }
+
             this.__props__.status = Thread.RUNNING;
 
             var thread = this,
@@ -309,7 +371,7 @@ define(function ( require, exports, module ) {
 
             if ( typeof progress === "function" ) {
                 finished = ( finished == null ) ? progress : finished;
-                
+
                 var callback = function ( e ) {
                     if ( e.data[ 0 ] ) {
                         thread.__props__.status = Thread.WAITING;
@@ -326,17 +388,20 @@ define(function ( require, exports, module ) {
         },
 
         "stop": function() {
-            if ( this.__props__.status === Thread.RUNNING ) {
-                var thread = this;
-                this.__props__.status = Thread.WAITING;
-                this.__props__.worker.terminate();
-                this.__props__.worker = new Worker( this.__props__.url );
-                this.__props__.worker.addEventListener( "error", function ( e ) {
-                    thread.kill();
-                    thread.__props__.status = Thread.ERROR;
-                    throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
-                }, false);
+            if ( this.__props__.status !== Thread.RUNNING ) {
+                return null;
             }
+
+            var thread = this;
+            this.__props__.status = Thread.WAITING;
+            this.__props__.worker.terminate();
+            this.__props__.worker = new Worker( this.__props__.url );
+            this.__props__.worker.addEventListener( "error", function ( e ) {
+                thread.kill();
+                thread.__props__.status = Thread.ERROR;
+                throw new ThreadError( "thread terminated in " + e.filename + " on line " + e.lineno + " with the following message: " + e.message );
+            }, false);
+            return true;
         },
 
         //
@@ -406,7 +471,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.5";
+    Thread.version = "0.3.6";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
@@ -414,6 +479,14 @@ define(function ( require, exports, module ) {
     Thread.kill = function ( thread ) {
         if ( thread instanceof Thread || thread instanceof ThreadGroup ) {
             return thread.kill();
+        } else {
+            return false;
+        }
+    };
+
+    Thread.stop = function ( thread ) {
+        if ( thread instanceof Thread || thread instanceof ThreadGroup ) {
+            return thread.stop();
         } else {
             return false;
         }
