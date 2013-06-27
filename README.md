@@ -3,7 +3,7 @@ Thread for JavaScript
 
 New in version 0.3.5
 -----------------
-This update is inspired by <http://github.com/ComFreek>. You now have the possibility to differ messages send by "send" from messages send at the end of a thread. But you can also use the behaviour from before.
+This update is inspired by [ComFreek](http://github.com/ComFreek). You now have the possibility to differ messages send by "send" from messages send at the end of a thread. But you can also use the behaviour from before.
 ```javascript
 // first version (callback fetchs messages from progress and finished)
 thread.send( data, function ( data, state ) {
