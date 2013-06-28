@@ -1,6 +1,29 @@
 Thread for JavaScript
 =================
 
+New in version 0.3.7
+-----------------
+This update is also inspired by [ComFreek](http://github.com/ComFreek). You now can import local named function into the thread code. The code of the functions is included *after* the imported files.
+```javascript
+function square ( x ) {
+  return ( x * x );
+}
+
+// import some files and the function "square", it doesn't matter in which order you do it
+var thread = new Thread([ "foo.js", "bar.js", square ], function ( data ) {
+  return square( data * 1 );
+});
+
+// the following example will throw an error
+var square = function ( x ) {
+  return ( x * x );
+};
+
+var thread = new Thread([ "foo.js", "bar.js", square ], function ( data ) {
+  return square( data * 1 );
+});
+```
+
 New in version 0.3.5
 -----------------
 This update is inspired by [ComFreek](http://github.com/ComFreek). You now have the possibility to differ messages send by "send" from messages send at the end of a thread. But you can also use the behaviour from before.
