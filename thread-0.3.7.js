@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.6
- * @date        2013-06-27
+ * @version     0.3.7
+ * @date        2013-06-28
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -324,7 +324,27 @@
 
         // add required scripts at the top of the thread script
         if ( require.length > 0 ) {
-            code = "importScripts(\"" + require.join( "\",\"" ) + "\");" + code;
+            var local = [],
+                files = [],
+                key;
+
+            for ( key in require ) {
+                if ( typeof require[ key ] === "string" ) {
+                    files.push( require[ key ] );
+                } else if ( typeof require[ key ] === "function" && /^function[ ]+\w+/.test( require[ key ].toString() ) ) {
+                    local.push( minimize( require[ key ].toString() ) );
+                } else {
+                    throw new ThreadError( "could not load required script or function, one of the passed values is neither a string nor a named function" );
+                }
+            }
+
+            if ( local.length > 0 ) {
+                code = local.join( ";" ) + ";" + code;
+            }
+
+            if ( files.length > 0 ) {
+                code = "importScripts(\"" + files.join( "\",\"" ) + "\");" + code;
+            }
         }
 
         // create url for the blob object
@@ -471,7 +491,7 @@
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.6";
+    Thread.version = "0.3.7";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
