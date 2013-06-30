@@ -1,7 +1,7 @@
 /**
  * @author      Gregor Mitzka (gregor.mitzka@gmail.com)
- * @version     0.3.6
- * @date        2013-06-27
+ * @version     0.3.8
+ * @date        2013-07-01
  * @licence     beer ware licence
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -13,7 +13,23 @@
 define(function ( require, exports, module ) {
     "use strict";
 
-    // minimize code
+    function absolute ( path, base ) {
+        var parts = path.split( "/" ),
+            stack = [],
+            i;
+
+        for ( i = 0; i < parts.length; ++i ) {
+            if ( parts[ i ] === ".." ) {
+                stack.pop();
+            } else if ( parts[ i ] !== "." ) {
+                stack.push( parts[ i ] );
+            }
+        }
+
+        path = stack.join( "/" ).replace( /^[\/]+/, "" );
+        return ( base == null ? "/" + path : base + "/" + path );
+    }
+    
     function minimize ( code ) {
         // segments are needed because otherwise it is impossible to differ code in parantheses from those outside of them
         var segments = [],
@@ -22,25 +38,29 @@ define(function ( require, exports, module ) {
         code.replace( /("(\\\\|\\"|[^"])*")|('(\\\\|\\'|[^'])*')|(\/(\\\\|\\\/|[^\/])+\/[ig]*)|([^"'\/]*)/g, function() {
             // code without parantheses
             if ( arguments[ 7 ] != null ) {
-                // does five things:
+                // does six things:
                 // 1. replace tabs and spaces between a keyword and the following statement
-                // 2. remove spaces, tabs and line breaks (not listed below, I think you know why)
-                // 3. remove semi-colons before a }
-                // 4. convert true to !0 and false to !1
-                // 5. everything else
-                return arguments[ 7 ].replace( /((return|var|case|delete|in|typeof|void|function)[ \r\n\t]+)|([ \r\n\t]+)|(;[ \n\r\t]*\})|(true|false)|(.)/g, function() {
+                // 2. replace tabs and spaces between the keyword "instanceof" or "in" and the following statements
+                // 3. remove spaces, tabs and line breaks (not listed below, I think you know why)
+                // 4. remove semi-colons before a }
+                // 5. convert true to !0 and false to !1
+                // 6. everything else
+                return arguments[ 7 ].replace( /((return|var|case|delete|typeof|void|function|else)[ \r\n\t]+)|([ \r\n\t]+(instanceof|in)[ \r\n\t]+)|([ \r\n\t]+)|(;[ \n\r\t]*\})|(true|false)|(.)/g, function() {
                     // 1. case
                     if ( arguments[ 2 ] ) {
                         segments.push( arguments[ 2 ] + " " );
-                    // 3. case
-                    } else if ( arguments[ 4 ]) {
-                        segments.push( ( segments.pop() || "" ) + "}" );
+                    // 2. case
+                    } else if ( arguments[ 4 ] ) {
+                        segments.push( " " + arguments[ 4 ] + " " );
                     // 4. case
-                    } else if ( arguments[ 5 ] ) {
-                        segments.push( ( segments.pop() || "" ) + ( arguments[ 5 ] === "true"  ? "!0" : "!1" ) );
-                    // 5. case
                     } else if ( arguments[ 6 ] ) {
-                        segments.push( ( segments.pop() || "" ) + arguments[ 6 ] );
+                        segments.push( ( segments.pop() || "" ) + "}" );
+                    // 5. case
+                    } else if ( arguments[ 7 ] ) {
+                        segments.push( ( segments.pop() || "" ) + ( arguments[ 7 ] === "true"  ? "!0" : "!1" ) );
+                    // 6. case
+                    } else if ( arguments[ 8 ] ) {
+                        segments.push( ( segments.pop() || "" ) + arguments[ 8 ] );
                     }
                 });
             // code with parantheses
@@ -287,6 +307,8 @@ define(function ( require, exports, module ) {
         callback = ( typeof require === "function" ) ? require : callback;
         require  = ( require instanceof Array )      ? require : [];
 
+        require.push( absolute );
+
         this.__props__.thread_id = ( "thread#" + ( new Date() ).valueOf() );
         this.__props__.callback  = callback;
 
@@ -302,33 +324,107 @@ define(function ( require, exports, module ) {
             throw new ThreadError( "could not create thread, script does not contain any commands" );
         }
 
-        // minimize code
-        code = minimize( code );
-        
-        // build the thread source code
-        code = [
-            "this.addEventListener(\"message\",function(e){",
-                "var t=e.target,s=this;",
-                "delete t.onmessage;delete t.onerror;delete t.self;",
-                "t.send=function(d){",
-                    "s.postMessage([!1,d])",
-                "};",
-                "t.import=function(f){",
-                    "s.importScripts(f)",
-                "};",
-                "t.threadId=\"", this.__props__.thread_id, "\";",
-                "var r=(" + code + ").call(t,e.data);",
-                "this.postMessage([!0,r])",
-            "},!1);"
-        ].join( "" );
+        var l = window.location,
+            data = {
+            "hash":      l.hash,
+            "host":      l.host,
+            "hostname":  l.hostname,
+            "href":      l.href,
+            "pathname":  l.pathname,
+            "port":      l.port,
+            "protocol":  l.protocol,
+            "search":    l.search,
+
+            "thread_id": this.__props__.thread_id,
+            "code":      code,
+            
+            "import_files": "",
+            "import_functions": ""
+        };
 
         // add required scripts at the top of the thread script
         if ( require.length > 0 ) {
-            code = "importScripts(\"" + require.join( "\",\"" ) + "\");" + code;
+            var local = [],
+                files = [],
+                key, name, item;
+                
+            for ( key in require ) {
+                item = require[ key ];
+                
+                if ( typeof item === "string" ) {
+                    files.push( absolute( item, window.location.protocol + "//" + window.location.host ) );
+                    continue;
+                }
+                
+                if ( typeof item === "function" && /^function[ ]+\w+/.test( item.toString() ) ) {
+                    item = item.toString();
+                    local.push( item );
+                } else {
+                    throw new ThreadError( "could not load required script or function, one of the passed values is neither a string nor a named function" );
+                }
+            }
+
+            if ( local.length > 0 ) {
+                data.import_functions = local.join( "\r\n" ) + "\r\n";
+            }
+
+            if ( files.length > 0 ) {
+                data.import_files = "importScripts(\"" + files.join( "\",\"" ) + "\");\r\n";
+            }
         }
 
+        // build the thread source code
+        code = (function() {
+            var source = function () {
+                __import_files;
+                __import_functions;
+
+                this.location = new (function WorkerLocation() {
+                    this.hash     = "__hash";
+                    this.host     = "__host";
+                    this.hostname = "__hostname";
+                    this.href     = "__href";
+                    this.pathname = "__pathname";
+                    this.port     = "__port";
+                    this.protocol = "__protocol";
+                    this.search   = "__search";
+                })();
+
+                this.addEventListener( "message", function ( e ) {
+                    var target = e.target,
+                        self   = this;
+                    target.send = function ( data ) {
+                        self.postMessage([ 2, data ]);
+                    };
+                    target.require = function ( files ) {
+                        files = ( typeof files === "string" ) ? [ files ] : files;
+                        files = ( files instanceof Array    ) ? files     : [];
+
+                        if ( files.length === 0 ) {
+                            return;
+                        }
+
+                        var key;
+
+                        for ( key in files ) {
+                            files[ key ] = absolute( files[ key ], "__protocol//__host" );
+                        }
+
+                        self.importScripts.apply( this, files );
+                    };
+                    target.threadId = "__thread_id";
+                    var ret = (__code).call( target, e.data );
+                    this.postMessage([ 1, ret ]);
+                }, false );
+            };
+
+            return "(" + source.toString().replace( /__([a-zA-Z0-9_]+)/g, function ( _, name ) {
+                return data[ name ];
+            }) + ").call( self );";
+        })();
+
         // create url for the blob object
-        var url  = window.URL.createObjectURL( new Blob( [ code ], { "type": "application/javascript" } ) );
+        var url = window.URL.createObjectURL( new Blob( [ minimize( code ) ], { "type": "application/javascript" } ) );
 
         this.__props__.worker = new Worker( url );
         this.__props__.url    = url;
@@ -373,7 +469,7 @@ define(function ( require, exports, module ) {
                 finished = ( finished == null ) ? progress : finished;
 
                 var callback = function ( e ) {
-                    if ( e.data[ 0 ] ) {
+                    if ( e.data[ 0 ] === 1 ) {
                         thread.__props__.status = Thread.WAITING;
                         finished.call( thread, e.data[ 1 ], Thread.WAITING );
                         worker.removeEventListener( "message", callback, false );
@@ -471,7 +567,7 @@ define(function ( require, exports, module ) {
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.6";
+    Thread.version = "0.3.8;
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
