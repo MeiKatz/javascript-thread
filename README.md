@@ -1,6 +1,18 @@
 Thread for JavaScript
 =================
 
+New in version 0.3.8
+-----------------
+```javascript
+var thread = new Thread(function ( data ) {
+  // import file
+  this.require( "foo.js" );
+  
+  // or
+  this.require([ "foo.js", "bar.js" ]);
+});
+```
+
 New in version 0.3.7
 -----------------
 This update is also inspired by [ComFreek](http://github.com/ComFreek). You now can import local named function into the thread code. The code of the functions is included *after* the imported files.
