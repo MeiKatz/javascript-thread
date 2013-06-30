@@ -567,7 +567,7 @@
     Thread.TERMINATED = 3;
     Thread.ERROR      = 4;
 
-    Thread.version = "0.3.8;
+    Thread.version = "0.3.8";
 
     //
     // @param   (object) thread: instance of Thread or ThreadGroup
